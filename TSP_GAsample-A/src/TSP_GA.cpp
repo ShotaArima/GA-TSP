@@ -6,7 +6,7 @@ int main()
 	char fname[256];
 	Population* pop;
 	Field* field;
-	char dataName[DATA_NUM][16] = {"berlin52", "eil51", "eil76", "kroA100", "test"};
+	char dataName[DATA_NUM][20] = {"TSP_data/berlin52", "TSP_data/eil51", "TSP_data/eil76", "TSP_data/kroA100", "TSP_data/test"};
 
 	srand((unsigned int)time(NULL));
 
