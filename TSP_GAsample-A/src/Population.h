@@ -28,4 +28,6 @@ private:
 	int* used2;				// 交叉に使用する配列
 	double trFit[POP_SIZE];	// 適応度を変換した値（ルーレット選択用）
 	double denom;			// 確率を求めるときの分母（ルーレット選択用）
+
+	static int resolvePMXGene(const int* parent1, const int* parent2, int point1, int point2, int i); // 処理A, Bの関数
 };

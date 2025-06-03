@@ -98,13 +98,14 @@ int Population::rankingSelect()
 {
 	int num, denom, r;
 
-/*
-	denomに1～POP_SIZEの和を代入する．
-	rに1～denomの乱数を代入する（整数のビットをフルに使う）．
-	numをPOP_SIZEから1まで1ずつ減らしながら以下を繰り返す．
-		rがnum以下なら繰返しから抜ける．
-		rからnumを引く．
-*/
+	denom = POP_SIZE*(POP_SIZE+1)/2;
+	r = rand()%(denom -1 +1)+ 1;
+    for(num = POP_SIZE ; num <=1; num--){
+        if (r <= num) {
+            break;
+        }
+        r -= num;
+    }
 	return POP_SIZE - num;
 }
 
@@ -115,13 +116,14 @@ int Population::rouletteSelect()
 	int rank;
 	double prob, r;
 
-/*
-	rに0～1の実数の乱数を代入する（オブジェクト形式マクロを活用する）．
-	rankを1からPOP_SIZE-1まで1ずつ増やしながら以下を繰り返す．
-		probにtrFit[rank-1]/denomを代入する．
-		rがprob以下なら繰返しから抜ける．
-		rからprobを引く．
-*/
+	r = rand()/(double)RAND_MAX;
+	for(rank = 1; rank < POP_SIZE-1; rank++) {
+	    prob = trFit[rank-1]/denom;
+	    if (r <= prob) {
+	        break;
+	    }
+	    r -= prob;
+	}
 	return rank - 1;
 }
 
@@ -129,23 +131,24 @@ int Population::rouletteSelect()
 // 戻り値: 選択した親個体の添え字
 int Population::tournamentSelect()
 {
-	int i, ret, num, r;
-	double bestFit;
-	int tmp[POP_SIZE];
+	int i, ret = -1, num = 0, r;
+	double bestFit = DBL_MAX;
+	int tmp[POP_SIZE] = {0};
 
-/*
-	tmp[0]～tmp[POP_SIZE-1]を0にする．
-	retに-1，bestFitにDBL_MAX，numに0を代入する．
-	以下を無限に繰り返す．
-		rに0～POP_SIZE-1の乱数を代入する．
-		tmp[r]が0なら以下を実行する．
-			tmp[r]に1を代入する．
-			ind[r]->fitnessがbestFitより小さかったら以下を実行する．
-				retにrを代入する．
-				bestFitにind[r]->fitnessを代入する．
-			numに1を足す．
-			numがTOURNAMENT_SIZEと等しかったら繰返しから抜ける．
-*/
+    while(1) {
+        r = rand()%(POP_SIZE-1 + 1);
+        if (tmp[r] == 0) {
+            tmp[r] = 1;
+            if (ind[r]->fitness < bestFit) {
+                ret = r;
+                bestFit = ind[r]->fitness;
+            }
+            num += 1;
+            if (num==TOURNAMENT_SIZE) {
+                break;
+            }
+        }
+    };
 	return ret;
 }
 
@@ -159,42 +162,50 @@ void Population::crossover(int p1, int p2, int c1, int c2)
 	int point1, point2, tmp, i, j, key;
 
 	// used1, used2の初期化
-/*
-	used1[0]～used1[field->nodeNum-1] ，used2[0]～used2[field->nodeNum-1]を0にする．
-*/
+	int used1[field->nodeNum-1] = {0}, used2[field->nodeNum-1] = {0};
 
 	// 交叉点の選択
-/*
-	point1に0～field->nodeNum-2の乱数を代入する．
-	point2にpoint1とは異なる0～field->nodeNum-2の乱数を代入する．
-	point1がpoint2より大きかったら入れ替える．
-*/
+	point1 = rand()%(field->nodeNum-2 + 1);
+	do{
+	    point2 = rand()%(field->nodeNum-2 + 1);
+	} while(point1 == point2);
+	if (point1 > point2) {
+	    tmp = point1;
+	    point1 = point2;
+	    point2 = tmp;
+	}
 
 	// 交叉点間のコピー
-/*
-	iをpoint1+1からpoint2-1まで1ずつ増やしながら以下を繰り返す．
-		nextInd[c1]->chrom[i]にind[p2]->chrom[i]を代入する．
-		nextInd[c2]->chrom[i]にind[p1]->chrom[i]を代入する．
-*/
+	for(i = point1+1; i <= point2-1; i++) {
+	    nextInd[c1]->chrom[i]=ind[p2]->chrom[i];
+        nextInd[c2]->chrom[i]=ind[p1]->chrom[i];
+	}
 
 	// 交叉点外のコピー
-/*
-	iを0からpoint1まで1ずつ増やしながら以下を繰り返す．	
-		--- ここから処理A ---
-		keyにind[p1]->chrom[i]を代入する．
-		以下を無限に繰り返す．
-			jをpoint1+1からpoint2-1まで1ずつ増やしながら以下を繰り返す．
-				keyがind[p2]->chrom[j]と等しかったら繰返しから抜ける．
-			jがpoint2と等しかったら繰返しから抜ける．
-			keyにind[p1]->chrom[j]を代入する．
-		nextInd[c1]->chrom[i]にkeyを代入する．
-		--- ここまで処理A ---
+	for (i = 0; i <= point1; i++) {
+        nextInd[c1]->chrom[i] = resolvePMXGene(ind[p1]->chrom, ind[p2]->chrom, point1, point2, i); // 処理A
+	    nextInd[c2]->chrom[i] = resolvePMXGene(ind[p2]->chrom, ind[p1]->chrom, point1, point2, i); // 処理B
+	}
+    for (i = point2; i < field->nodeNum; i++) {
+         nextInd[c1]->chrom[i] = resolvePMXGene(ind[p1]->chrom, ind[p2]->chrom, point1, point2, i);
+         nextInd[c2]->chrom[i] = resolvePMXGene(ind[p2]->chrom, ind[p1]->chrom, point1, point2, i);
+    }
+}
 
-		--- ここから処理B ---
-		処理Aのp1をp2，p2をp1，c1をc2にした処理を実行する．
-		--- ここまで処理B ---
-	iをpoint2からfield->nodeNum-1まで1ずつ増やしながら処理Aと処理Bを繰り返す．
-*/
+// 処理A, Bの関数
+int Population::resolvePMXGene(const int* parent1, const int* parent2, int point1, int point2, int i) {
+    int key = parent1[i];
+    while (true) {
+        int j;
+        for (j = point1 + 1; j <= point2 - 1; ++j) {
+            if (key == parent2[j]) {
+                break;
+            }
+        }
+        if (j == point2) break;
+        key = parent1[j];
+    }
+    return key;
 }
 
 // ind[lb]～ind[ub]をクイックソートで並び替える
