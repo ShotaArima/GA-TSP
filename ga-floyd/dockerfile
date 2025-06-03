@@ -76,7 +76,7 @@ WORKDIR $HOME
 RUN pip install --upgrade pip
 RUN pip install --upgrade setuptools
 
-COPY ./ga-floyd/ $HOME/
+COPY . $HOME/
 
 WORKDIR $HOME/GA-Floyd
 
