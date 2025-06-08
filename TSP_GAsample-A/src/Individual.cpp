@@ -25,18 +25,10 @@ void Individual::setChrom()
 	chrom[0] = 0;
 	for (i = 1; i <= pop->field->nodeNum-1; i++) {
 	    chrom[i] = i;
-	    randArray[i] = //乱数を代入
+	    randArray[i] = rand(); // randArray[i]に乱数を代入する．
 	}
-	sortRandArray(1, pop->field->nodeNum-1)
+	sortRandArray(1, pop->field->nodeNum-1);
     fitness = -1.0;
-/*
-	chrom[0]に0を代入する．
-	iを1からpop->field->nodeNum-1まで1ずつ増やしながら以下を繰り返す．
-		chrom[i]にiを代入する．
-		randArray[i]に乱数を代入する．
-	sortRandArray(1, pop->field->nodeNum-1)を呼び出す．
-	fitnessに-1.0を代入する．
-*/
 }
 
 // 適応度を算出する
@@ -46,14 +38,8 @@ void Individual::evaluate()
 
 	fitness = pop->field->distance[chrom[pop->field->nodeNum-1]][chrom[0]];
 	for(i=0;i <= pop->field->nodeNum-2; i++) {
-	    fitness += pop->field->distance[chrom[i]][chrom[i+1]]
+	    fitness += pop->field->distance[chrom[i]][chrom[i+1]];
 	}
-
-/*
-	fitnessにpop->field->distance[chrom[pop->field->nodeNum-1]][chrom[0]]を代入する．
-	iを0からpop->field->nodeNum-2まで1ずつ増やしながら以下を繰り返す．
-		fitnessにpop->field->distance[chrom[i]][chrom[i+1]]を足す．
-*/
 }
 
 // 突然変異を起こす
@@ -61,18 +47,20 @@ void Individual::mutate()
 {
 	int i, r, tmp;
 
-	for(i-1; i <= pop->field->nodeNum-1; i++) {
-	    // オブジェクト形式マクロを活用して発生させた0～1の実数の乱数がMUTATE_PROB未満なら以下を実行する．
-	    // rにiとは異なる1～pop->field->nodeNum-1の乱数を代入する．
+	for(i=1; i <= pop->field->nodeNum-1; i++) {
+	    // オブジェクト形式マクロを活用して発生させた0～1の実数の乱数がMUTATE_PROB未満なら以下を実行する
+	    if (rand()/(double)RAND_MAX < MUTATE_PROB) {
+	        // rにiとは異なる1～pop->field->nodeNum-1の乱数を代入する．
+	        do{
+	            r = rand()%(pop->field->nodeNum-1 - 1 + 1) + 1;
+	        } while(r == i);
 
+	        // chrom[i]とchrom[r]を入れ替える．
+            tmp = chrom[i];
+            chrom[i] = chrom[r];
+            chrom[r] = tmp;
+	    }
 	}
-
-/*
-	iを1からpop->field->nodeNum-1まで1ずつ増やしながら以下を繰り返す．
-		オブジェクト形式マクロを活用して発生させた0～1の実数の乱数がMUTATE_PROB未満なら以下を実行する．
-		rにiとは異なる1～pop->field->nodeNum-1の乱数を代入する．
-		chrom[i]とchrom[r]を入れ替える．
-*/
 }
 
 // randArray[lb]～randArray[ub]を並び替えつつ，chrom[lb]～chrom[ub]も並び替える
