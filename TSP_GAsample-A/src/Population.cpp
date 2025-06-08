@@ -1,39 +1,63 @@
 ﻿#include "Population.h"
 #include <time.h>
+#include <sys/stat.h>
+#include <iostream>
 
 Field* Population::field = NULL;
 
 // コンストラクタ
-Population::Population(Field* argField)
+Population::Population(Field* argField,
+	const std::string& datasetName,
+	const std::string& selectionMethod,
+	const std::string& crossoverMethod,
+	int popSize,
+	double mutateRate)
+    :	selectionMethod(selectionMethod),
+		crossoverMethod(crossoverMethod),
+		popSize(popSize),
+		mutateRate(mutateRate)
+
 {
-	int i;
+	field = argField;
+	// ログディレクトリ作成（なければ）
+    mkdir("log", 0777);
 
-	Population::field = argField;
-	Individual::randArray = new int [field->nodeNum];
-	used1 = new int [field->nodeNum];
-	used2 = new int [field->nodeNum];
-	ind = new Individual* [POP_SIZE];
-	nextInd = new Individual* [POP_SIZE];
-	for(i = 0; i < POP_SIZE; i++) {
-		ind[i] = new Individual(this);
-		nextInd[i] = new Individual(this);
-	}
-	evaluate();
+	// ログファイル名生成
+    char logname[256];
+    sprintf(logname, "log/log_%s_%s_%s_%d_%.2f.csv",
+        datasetName.c_str(),
+        selectionMethod.c_str(),
+        crossoverMethod.c_str(),
+        popSize,
+        mutateRate);
 
-	log_fp = fopen("log/log.csv", "w");  // 必要に応じてファイル名を可変に
-    if (log_fp == NULL) {
-        printf("ログファイルのオープンに失敗しました\n");
+    log_fp = fopen(logname, "w");
+    if (!log_fp) {
+        std::cerr << "ログファイルのオープンに失敗しました\n";
         exit(1);
     }
     fprintf(log_fp, "Generation,BestDistance,ElapsedTime\n");
+
+	// メモリ確保
+    Individual::randArray = new int[field->nodeNum];
+    used1 = new int[field->nodeNum];
+    used2 = new int[field->nodeNum];
+    ind = new Individual*[popSize];
+    nextInd = new Individual*[popSize];
+
+    for (int i = 0; i < popSize; i++) {
+        ind[i] = new Individual(this);
+        nextInd[i] = new Individual(this);
+    }
+
+    evaluate();
 }
 
 // デストラクタ
 Population::~Population()
 {
-	int i;
 
-	for(i = 0; i < POP_SIZE; i++) {
+	for(int i = 0; i < POP_SIZE; i++) {
 		delete ind[i];
 		delete nextInd[i];
 	}
@@ -49,10 +73,10 @@ Population::~Population()
     }
 }
 
-// 世代交代をする
+// 世代交代
 void Population::alternate()
 {
-	int i, j, p1, p2;
+	int p1, p2;
 	Individual **tmp;
 	static int generation = 0;
     clock_t start = clock();  // 開始時間の記録
@@ -60,31 +84,33 @@ void Population::alternate()
 	// ルーレット選択のための処理
 	/*
 	denom = 0.0;
-	for(i = 0; i < POP_SIZE; i++) {
+	for(int i = 0; i < POP_SIZE; i++) {
 		trFit[i] = (ind[POP_SIZE - 1]->fitness - ind[i]->fitness) / (ind[POP_SIZE - 1]->fitness - ind[0]->fitness);
 		denom += trFit[i];
 	}
 	*/
 
 	// エリート保存戦略で子個体を作る
-	for(i = 0; i < ELITE; i++) {
-		for(j = 0; j < field->nodeNum; j++) {
+	for(int i = 0; i < ELITE; i++) {
+		for(int j = 0; j < field->nodeNum; j++) {
 			nextInd[i]->chrom[j] = ind[i]->chrom[j];
 		}
 	}
 
 	// 親を選択し，交叉して子個体を作り，突然変異を起こす
-	for(; i < POP_SIZE - 1; i += 2) {
-		p1 = rankingSelect();
-		p2 = rankingSelect();
+	for(int i = ELITE; i< popSize - 1; i += 2) {
+		int p1 = rankingSelect();
+		int p2 = rankingSelect();
+		
 		crossover(p1, p2, i, i + 1);
+		
 		nextInd[i]->mutate();
 		nextInd[i + 1]->mutate();
 	}
 
 	// 半端が出たらランダムに生成する
-	if(i != POP_SIZE) {
-		nextInd[i]->setChrom();
+	if(popSize %2 != 0) {
+		nextInd[popSize -1]->setChrom();
 	}
 
 	// 次世代を現世代に変更する
