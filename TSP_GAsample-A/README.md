@@ -24,20 +24,22 @@ g++ *.cpp -o tsp_ga # コンパイル
 ```
 
 ## 引数のパターンについて
-`./tsp_ga [dataset] [selection] [crossover] [popSize] [mutateRate]`
+```bash
+./tsp_ga [dataset] [selection] [crossover] [popSize] [mutateRate]
+```
 
-引数	内容	例
-dataset	TSPインスタンスの名前（例：berlin52）	berlin52
-selection	選択戦略の種類（ranking, roulette, tournament）	ranking
-crossover	交叉法の種類（今は pmx のみ対応）	pmx
-popSize	個体数（集団サイズ）	100
-mutateRate	突然変異率（例：0.01で1%）	0.01
+|引数|	内容|	例|
+|---|-----|-----|
+|`dataset`|	TSPインスタンスの名前（例：berlin52）|	berlin52|
+|`selection`|	選択戦略の種類（ranking, roulette, tournament）|	ranking|
+|`crossover`|	交叉法の種類|pmx|
+|`popSize`|	個体数（集団サイズ）|100|
+|`mutateRate`|	突然変異率（例：0.01で1%）|0.01|
 
-### 例
+- 例
 ```bash
 ./tsp_ga berlin52 ranking pmx 100 0.01
 ```
-
 - データセット: berlin52
 - 選択方式: ranking（ランキング選択）
 - 交叉方式: pmx（部分写像交叉）
@@ -47,7 +49,6 @@ mutateRate	突然変異率（例：0.01で1%）	0.01
 
 ## パラメータについて
 ### 1. データセット
-
 |候補|備考|
 |---|----|
 |berlin52|ベルリン市内52地点|
@@ -64,14 +65,16 @@ mutateRate	突然変異率（例：0.01で1%）	0.01
 |tournament|トーナメント選択（複数から勝者を選ぶ）|
 
 ### 交叉方式
+| 候補          | 備考                                                          |
+| ----------- | ----------------------------------------------------------- |
+| `pmx`       | 部分写像交叉（Partially Mapped Crossover）<br>区間の対応関係を保持しつつ遺伝子を交換する |
+| `ox`        | 順序交叉（Order Crossover）<br>順序情報を維持しながら区間をコピー・残りを循環補完する        |
+| `one_point` | 一点交叉（One-Point Crossover）<br>1点で分割し、前半・後半を相互に交換する           |
+| `two_point` | 二点交叉（Two-Point Crossover）<br>2点の間の区間をコピー、それ以外を補完する          |
+| `uniform`   | 一様交叉（Uniform Crossover）<br>各遺伝子ごとにランダムにどちらの親から受け継ぐかを決定する    |
 
-|候補|備考|
-|---|----|
-|`pmx`|	部分写像交叉（Partially Mapped Crossover）|
-|（今後追加可能）|ox（順序交叉）なども追加可能|
 
 ### 個体数
-
 |候補|備考|
 |---|----|
 |50|	小規模検証向け|
@@ -81,7 +84,6 @@ mutateRate	突然変異率（例：0.01で1%）	0.01
 
 
 ### 突然変異率
-
 |候補例|説明|
 |---|----|
 |0.001|非常に低い（探索範囲狭い）|
