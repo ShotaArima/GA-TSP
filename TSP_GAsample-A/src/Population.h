@@ -1,35 +1,51 @@
 ﻿#pragma once
 
 #include "Individual.h"
+#include <string>
+#include <cstdio>
+
 class Individual;
+class Field;
 
 class Population
 {
 public:
-	static Field* field;	// 巡回の場
+    Population(Field* argField,
+		const std::string& datasetName,
+		const std::string& selectionMethod,
+		const std::string& crossoverMethod,
+		int popSize,
+		double mutateRate);
 
-	Population(Field* argField);
 	~Population();
 	void alternate();		// 世代交代をする
 	void printRoute();		// 経路を表示する
 
-	Individual **ind;		// 現世代の個体群のメンバ
+	static Field* field;
+	Individual **ind; // 現世代の個体群
 
 private:
-	void evaluate();								// 個体を評価する
-	int rankingSelect();							// ランキング選択で親個体を選択する
-	int rouletteSelect();							// ルーレット選択で親個体を選択する
-	int tournamentSelect();							// トーナメント選択で親個体を選択する
-	void crossover(int p1, int p2, int c1, int c2);	// 交叉により子を生成する
-	void sort(int lb, int ub);						// 個体を良い順に並び替える
+    int rankingSelect();
+    int rouletteSelect();
+    int tournamentSelect();
 
-	Individual **nextInd;	// 次世代の個体群のメンバ
-	int* used1;				// 交叉に使用する配列
-	int* used2;				// 交叉に使用する配列
-	double trFit[POP_SIZE];	// 適応度を変換した値（ルーレット選択用）
-	double denom;			// 確率を求めるときの分母（ルーレット選択用）
+    Individual** nextInd;
 
-	FILE* log_fp;			// 🔽ここを追加：ログ出力用ファイルポインタ
+    int* used1;
+    int* used2;
+    FILE* log_fp;
 
-	static int resolvePMXGene(const int* parent1, const int* parent2, int point1, int point2, int i); // 処理A, Bの関数
+    std::string selectionMethod;
+    std::string crossoverMethod;
+    int popSize;
+    double mutateRate;
+
+    void evaluate();
+    int selectParent();
+    void crossover(int p1, int p2, int c1, int c2);
+    int resolvePMXGene(const int* parent1, const int* parent2, int point1, int point2, int i);
+    void sort(int lb, int ub);
+
+	double* trFit;    // 適応度正規化用（ルーレット選択用）
+    double denom;     // trFitの合計
 };

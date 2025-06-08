@@ -1,30 +1,53 @@
-﻿#include "Population.h"
+﻿// === TSP_GA.cpp ===
+#include "Population.h"
+#include "Field.h"
 
-int main()
+#include <string>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <cmath>
+
+// #define GEN_MAX 500
+#define MAXNODE 200  // 必要に応じて最大ノード数を調整
+
+Field* loadField(const std::string& filename) {
+    Field* field = new Field((char*)(std::string("TSP_data/" + filename + ".tsp").c_str()));
+    return field;
+}
+
+int main(int argc, char* argv[])
 {
-	int i, dataNo;
-	char fname[256];
-	Population* pop;
-	Field* field;
-	char dataName[DATA_NUM][20] = {"TSP_data/berlin52", "TSP_data/eil51", "TSP_data/eil76", "TSP_data/kroA100", "TSP_data/test"};
+    if (argc < 6) {
+        printf("Usage: %s [dataset] [selection] [crossover] [popSize] [mutateRate]\n", argv[0]);
+        printf("  dataset   : berlin52 / eil51 / eil76 / kroA100 / test\n");
+        printf("  selection : ranking / roulette / tournament\n");
+        printf("  crossover : pmx / ox\n");
+        printf("  popSize   : 集団サイズ（例：100）\n");
+        printf("  mutateRate: 突然変異率（例：0.01）\n");
+        return 1;
+    }
 
-	srand((unsigned int)time(NULL));
+    std::string dataset = argv[1];
+    std::string selection = argv[2];
+    std::string crossover = argv[3];
+    int popSize = atoi(argv[4]);
+    double mutateRate = atof(argv[5]);
 
-	printf("実行するデータの番号を入力してください．\n");
-	for(i = 0; i < DATA_NUM; i++) {
-		printf("%d : %s\n", i + 1, dataName[i]);
-	}
-	scanf("%d", &dataNo);
-	sprintf(fname, "%s.tsp", dataName[dataNo - 1]);
-	field = new Field(fname);
+    std::srand(static_cast<unsigned int>(std::time(NULL)));
 
-	pop = new Population(field);
-	for(i = 1; i <= GEN_MAX; i++) {
-		pop->alternate();
-	}
-	pop->printRoute();
+    Field* field = new Field((char*)(std::string("TSP_data/" + dataset + ".tsp").c_str()));
+    Population* pop = new Population(field, dataset, selection, crossover, popSize, mutateRate);
 
-	delete pop;
-	delete field;
-	return 0;
+    for (int gen = 1; gen <= GEN_MAX; gen++) {
+        pop->alternate();
+    }
+    pop->printRoute();
+
+    delete pop;
+    delete field;
+    return 0;
 }
