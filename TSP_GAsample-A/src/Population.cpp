@@ -1,4 +1,5 @@
 ﻿#include "Population.h"
+#include <time.h>
 
 Field* Population::field = NULL;
 
@@ -18,6 +19,13 @@ Population::Population(Field* argField)
 		nextInd[i] = new Individual(this);
 	}
 	evaluate();
+
+	log_fp = fopen("log/log.csv", "w");  // 必要に応じてファイル名を可変に
+    if (log_fp == NULL) {
+        printf("ログファイルのオープンに失敗しました\n");
+        exit(1);
+    }
+    fprintf(log_fp, "Generation,BestDistance,ElapsedTime\n");
 }
 
 // デストラクタ
@@ -34,6 +42,11 @@ Population::~Population()
 	delete [] Individual::randArray;
 	delete [] used1;
 	delete [] used2;
+
+	if (log_fp != NULL) {
+        fclose(log_fp);
+        log_fp = NULL;
+    }
 }
 
 // 世代交代をする
@@ -41,6 +54,8 @@ void Population::alternate()
 {
 	int i, j, p1, p2;
 	Individual **tmp;
+	static int generation = 0;
+    clock_t start = clock();  // 開始時間の記録
 
 	// ルーレット選択のための処理
 	/*
@@ -79,6 +94,12 @@ void Population::alternate()
 
 	// 評価する
 	evaluate();
+
+	// === ログ出力処理 ===
+    clock_t end = clock();
+    double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+    fprintf(log_fp, "%d,%f,%f\n", generation, ind[0]->fitness, elapsed);
+    generation++;
 }
 
 // すべての個体を評価して，適応度順に並び替える

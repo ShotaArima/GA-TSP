@@ -29,5 +29,7 @@ private:
 	double trFit[POP_SIZE];	// 適応度を変換した値（ルーレット選択用）
 	double denom;			// 確率を求めるときの分母（ルーレット選択用）
 
+	FILE* log_fp;			// 🔽ここを追加：ログ出力用ファイルポインタ
+
 	static int resolvePMXGene(const int* parent1, const int* parent2, int point1, int point2, int i); // 処理A, Bの関数
 };
