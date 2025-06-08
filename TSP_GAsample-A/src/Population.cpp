@@ -199,43 +199,25 @@ int Population::tournamentSelect()
 	return ret;
 }
 
-// 部分写像交叉でind[p1]とind[p2]からnextInd[c1]とnextInd[c2]を生成する．
 // p1: 親個体1の添字
 // p2: 親個体2の添字
 // c1: 子個体1の添字
 // c2: 子個体2の添字
 void Population::crossover(int p1, int p2, int c1, int c2)
 {
-	int point1, point2, tmp, i, j, key;
-
-	// used1, used2の初期化
-	int used1[field->nodeNum-1] = {0}, used2[field->nodeNum-1] = {0};
-
-	// 交叉点の選択
-	point1 = rand()%(field->nodeNum-2 + 1);
-	do{
-	    point2 = rand()%(field->nodeNum-2 + 1);
-	} while(point1 == point2);
-	if (point1 > point2) {
-	    tmp = point1;
-	    point1 = point2;
-	    point2 = tmp;
-	}
-
-	// 交叉点間のコピー
-	for(i = point1+1; i <= point2-1; i++) {
-	    nextInd[c1]->chrom[i]=ind[p2]->chrom[i];
-        nextInd[c2]->chrom[i]=ind[p1]->chrom[i];
-	}
-
-	// 交叉点外のコピー
-	for (i = 0; i <= point1; i++) {
-        nextInd[c1]->chrom[i] = resolvePMXGene(ind[p1]->chrom, ind[p2]->chrom, point1, point2, i); // 処理A
-	    nextInd[c2]->chrom[i] = resolvePMXGene(ind[p2]->chrom, ind[p1]->chrom, point1, point2, i); // 処理B
-	}
-    for (i = point2; i < field->nodeNum; i++) {
-         nextInd[c1]->chrom[i] = resolvePMXGene(ind[p1]->chrom, ind[p2]->chrom, point1, point2, i);
-         nextInd[c2]->chrom[i] = resolvePMXGene(ind[p2]->chrom, ind[p1]->chrom, point1, point2, i);
+	if (crossoverMethod == "pmx") {
+        crossoverPMX(p1, p2, c1, c2);
+    } else if (crossoverMethod == "ox") {
+        crossoverOX(p1, p2, c1, c2);
+    } else if (crossoverMethod == "one_point") {
+        crossoverOnePoint(p1, p2, c1, c2);
+    } else if (crossoverMethod == "two_point") {
+        crossoverTwoPoint(p1, p2, c1, c2);
+    } else if (crossoverMethod == "uniform") {
+        crossoverUniform(p1, p2, c1, c2);
+    } else {
+        std::cerr << "Unsupported crossover method: " << crossoverMethod << std::endl;
+        std::exit(1);
     }
 }
 
@@ -299,4 +281,180 @@ void Population::printRoute()
 	}
 	printf("\n");
 	printf("Total Distance : %f\n", ind[0]->fitness);
+}
+
+// OX:順序交叉
+void Population::crossoverOX(int p1, int p2, int c1, int c2) {
+    int point1 = rand() % (field->nodeNum - 1);
+    int point2;
+    do {
+        point2 = rand() % (field->nodeNum - 1);
+    } while (point1 == point2);
+    if (point1 > point2) std::swap(point1, point2);
+
+    // 初期化
+    bool used1[field->nodeNum] = {};
+    bool used2[field->nodeNum] = {};
+
+    // 中央部をコピー
+    for (int i = point1; i <= point2; i++) {
+        nextInd[c1]->chrom[i] = ind[p1]->chrom[i];
+        used1[ind[p1]->chrom[i]] = true;
+        nextInd[c2]->chrom[i] = ind[p2]->chrom[i];
+        used2[ind[p2]->chrom[i]] = true;
+    }
+
+    // 外側を親2から順に埋める（循環）
+    int idx1 = (point2 + 1) % field->nodeNum;
+    int fill1 = (point2 + 1) % field->nodeNum;
+    for (int i = 0; i < field->nodeNum; i++) {
+        int gene = ind[p2]->chrom[(point2 + 1 + i) % field->nodeNum];
+        if (!used1[gene]) {
+            nextInd[c1]->chrom[fill1] = gene;
+            fill1 = (fill1 + 1) % field->nodeNum;
+        }
+    }
+
+    int idx2 = (point2 + 1) % field->nodeNum;
+    int fill2 = (point2 + 1) % field->nodeNum;
+    for (int i = 0; i < field->nodeNum; i++) {
+        int gene = ind[p1]->chrom[(point2 + 1 + i) % field->nodeNum];
+        if (!used2[gene]) {
+            nextInd[c2]->chrom[fill2] = gene;
+            fill2 = (fill2 + 1) % field->nodeNum;
+        }
+    }
+}
+
+// 部分写像交叉でind[p1]とind[p2]からnextInd[c1]とnextInd[c2]を生成する．
+void Population::crossoverPMX(int p1, int p2, int c1, int c2) {
+    int point1, point2, tmp, i;
+
+    int used1[field->nodeNum-1] = {0}, used2[field->nodeNum-1] = {0};
+
+    point1 = rand() % (field->nodeNum - 2 + 1);
+    do {
+        point2 = rand() % (field->nodeNum - 2 + 1);
+    } while(point1 == point2);
+    if (point1 > point2) std::swap(point1, point2);
+
+    for (i = point1 + 1; i <= point2 - 1; i++) {
+        nextInd[c1]->chrom[i] = ind[p2]->chrom[i];
+        nextInd[c2]->chrom[i] = ind[p1]->chrom[i];
+    }
+
+    for (i = 0; i <= point1; i++) {
+        nextInd[c1]->chrom[i] = resolvePMXGene(ind[p1]->chrom, ind[p2]->chrom, point1, point2, i);
+        nextInd[c2]->chrom[i] = resolvePMXGene(ind[p2]->chrom, ind[p1]->chrom, point1, point2, i);
+    }
+    for (i = point2; i < field->nodeNum; i++) {
+        nextInd[c1]->chrom[i] = resolvePMXGene(ind[p1]->chrom, ind[p2]->chrom, point1, point2, i);
+        nextInd[c2]->chrom[i] = resolvePMXGene(ind[p2]->chrom, ind[p1]->chrom, point1, point2, i);
+    }
+}
+
+
+// 一点交叉
+void Population::crossoverOnePoint(int p1, int p2, int c1, int c2) {
+    int point = rand() % field->nodeNum;
+
+    bool used1[field->nodeNum] = {};
+    bool used2[field->nodeNum] = {};
+
+    for (int i = 0; i < point; i++) {
+        nextInd[c1]->chrom[i] = ind[p1]->chrom[i];
+        used1[ind[p1]->chrom[i]] = true;
+        nextInd[c2]->chrom[i] = ind[p2]->chrom[i];
+        used2[ind[p2]->chrom[i]] = true;
+    }
+
+    int idx1 = point, idx2 = point;
+    for (int i = 0; i < field->nodeNum; i++) {
+        int gene1 = ind[p2]->chrom[i];
+        int gene2 = ind[p1]->chrom[i];
+
+        if (!used1[gene1]) nextInd[c1]->chrom[idx1++] = gene1;
+        if (!used2[gene2]) nextInd[c2]->chrom[idx2++] = gene2;
+    }
+}
+
+// 2点交叉
+void Population::crossoverTwoPoint(int p1, int p2, int c1, int c2) {
+    int point1 = rand() % field->nodeNum;
+    int point2;
+    do {
+        point2 = rand() % field->nodeNum;
+    } while (point1 == point2);
+    if (point1 > point2) std::swap(point1, point2);
+
+    bool used1[field->nodeNum] = {};
+    bool used2[field->nodeNum] = {};
+
+    for (int i = point1; i <= point2; i++) {
+        nextInd[c1]->chrom[i] = ind[p1]->chrom[i];
+        used1[ind[p1]->chrom[i]] = true;
+        nextInd[c2]->chrom[i] = ind[p2]->chrom[i];
+        used2[ind[p2]->chrom[i]] = true;
+    }
+
+    int idx1 = (point2 + 1) % field->nodeNum;
+    int idx2 = (point2 + 1) % field->nodeNum;
+    for (int i = 0; i < field->nodeNum; i++) {
+        int gene1 = ind[p2]->chrom[(point2 + 1 + i) % field->nodeNum];
+        int gene2 = ind[p1]->chrom[(point2 + 1 + i) % field->nodeNum];
+
+        if (!used1[gene1]) {
+            nextInd[c1]->chrom[idx1] = gene1;
+            idx1 = (idx1 + 1) % field->nodeNum;
+        }
+        if (!used2[gene2]) {
+            nextInd[c2]->chrom[idx2] = gene2;
+            idx2 = (idx2 + 1) % field->nodeNum;
+        }
+    }
+}
+
+// 一様交叉
+void Population::crossoverUniform(int p1, int p2, int c1, int c2) {
+    bool used1[field->nodeNum] = {};
+    bool used2[field->nodeNum] = {};
+    int temp1[field->nodeNum], temp2[field->nodeNum];
+
+    for (int i = 0; i < field->nodeNum; i++) {
+        if (rand() % 2) {
+            temp1[i] = ind[p1]->chrom[i];
+            used1[temp1[i]] = true;
+            temp2[i] = ind[p2]->chrom[i];
+            used2[temp2[i]] = true;
+        } else {
+            temp1[i] = -1;
+            temp2[i] = -1;
+        }
+    }
+
+    for (int i = 0; i < field->nodeNum; i++) {
+        if (temp1[i] == -1) {
+            for (int j = 0; j < field->nodeNum; j++) {
+                if (!used1[ind[p2]->chrom[j]]) {
+                    temp1[i] = ind[p2]->chrom[j];
+                    used1[temp1[i]] = true;
+                    break;
+                }
+            }
+        }
+        if (temp2[i] == -1) {
+            for (int j = 0; j < field->nodeNum; j++) {
+                if (!used2[ind[p1]->chrom[j]]) {
+                    temp2[i] = ind[p1]->chrom[j];
+                    used2[temp2[i]] = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < field->nodeNum; i++) {
+        nextInd[c1]->chrom[i] = temp1[i];
+        nextInd[c2]->chrom[i] = temp2[i];
+    }
 }

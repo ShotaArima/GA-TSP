@@ -43,6 +43,11 @@ private:
     void evaluate();
     int selectParent();
     void crossover(int p1, int p2, int c1, int c2);
+	void crossoverPMX(int p1, int p2, int c1, int c2);
+    void crossoverOX(int p1, int p2, int c1, int c2);
+    void crossoverOnePoint(int p1, int p2, int c1, int c2);
+    void crossoverTwoPoint(int p1, int p2, int c1, int c2);
+    void crossoverUniform(int p1, int p2, int c1, int c2);
     int resolvePMXGene(const int* parent1, const int* parent2, int point1, int point2, int i);
     void sort(int lb, int ub);
 
